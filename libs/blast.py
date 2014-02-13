@@ -33,8 +33,7 @@ class Hsp:
 
     """
 
-    def __init__(self,entry):
-        bt_fields = entry.split('\t')
+    def __init__(self,bt_fields):
         self.qid = bt_fields[0]
         self.sid = bt_fields[1]
         self.pident = float(bt_fields[2])
@@ -71,6 +70,10 @@ class BlastRecord:
                 l.append(hsp)
         self.hits = l
 
+    def __str__(self):
+        return "Query: {0} Hits: {1}".format(self.qid,len(self.hits))
+    
+
 
 
 #This is a generator function!
@@ -83,11 +86,16 @@ def parse(handle, eval_thresh=10):
      eval_thresh - E-value cutoff for Blast results.
 
      """
-     for qid, hsps in groupby(handle, lambda l: l.split()[0]):
+     grouping = lambda x: x.split()[0]
+     for qid, hsps in groupby(handle, grouping):
+         if qid.startswith('#'): continue
          hits = []
          prev_sid = False
          for line in hsps:
-             hsp = Hsp(line)
+             sl = line.split()
+             if len(sl)!=12:
+                 raise ValueError('BLAST output should be in -m8 format.')
+             hsp = Hsp(sl)
              if hsp.evalue<=eval_thresh:
                  if prev_sid != hsp.sid:
                      hits.append(hsp)
